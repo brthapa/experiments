@@ -4,27 +4,11 @@ from django.contrib.auth.models import Group, Permission
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
-# from apps.encryption.fields import EncryptedFileField
-
 class UserProfile(models.Model):
     GENDER_CHOICES = [
         ("Male", _("Male")),
         ("Female", _("Female")),
         ("Other", _("Other"))
-    ]
-
-    ROLE_CHOICES = [
-        ("student", "Student"),
-        ("instructor", "Instructor"),
-        ("admin", "Admin"),
-        ("Article Writer", "Article Writer")
-    ]
-
-    FIELD_OF_INTERESTS_CHOICES = [
-        ("nea", "NEA"),
-        ("Nepal Bank", "Nepal Bank"),
-        ("Nepal Police", "Nepal Police"),
-        ("Teacher Service Commission (TSC)", "Teacher Service Commission (TSC)")
     ]
     user = models.OneToOneField(
         settings.AUTH_USER_MODEL,
@@ -36,15 +20,9 @@ class UserProfile(models.Model):
         max_length=100, choices=GENDER_CHOICES, null=True, blank=True
     )
     phone = models.CharField(max_length=15, null=True, blank=True, unique=True)
-    field_of_interests = models.CharField(
-        max_length=100, choices=FIELD_OF_INTERESTS_CHOICES, null=True, blank=True
-    )
     address = models.CharField(max_length=255, null=True, blank=True)
     dob = models.DateTimeField(null=True, blank=True)
     phone_number_is_verified = models.BooleanField(default=False)
-    role = models.CharField(
-        max_length=100, choices=ROLE_CHOICES, null=True, blank=True
-    )
     experience_in_yrs = models.PositiveIntegerField(null=True, blank=True)
     profile_photo_url = models.ImageField(upload_to="user/profile/", null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -53,16 +31,33 @@ class UserProfile(models.Model):
     def __str__(self):
         return self.user.username
 
+class AreasOfPreparations(models.Model):
+    name = models.CharField(max_length=255)
+    icon_name = models.CharField(max_length=255)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
-class Device(models.Model):
-    """
-        Stores information about user devices for fcm notifications
-    """
-    device_id = models.CharField(max_length=100, null=True, blank=True)
-    registration_id = models.TextField()
-    email = models.CharField(max_length=100)
+    def __str__(self):
+        return self.name
 
+class UserFieldOfInterests(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        related_name="field_of_interests",
+        on_delete=models.CASCADE
+    )
+    areas_of_preparation = models.ForeignKey(
+        AreasOfPreparations,
+        related_name="areas_of_preparations",
+        on_delete=models.CASCADE
+    )
 
+    class Meta:
+        unique_together = ('user', 'areas_of_preparation')  # Ensure no duplicate entries
+
+    def __str__(self):
+        return f"{self.user.username} - {self.field_of_interest.name}"
+    
 class UserRole(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, related_name="roles", on_delete=models.CASCADE)
     group = models.ForeignKey(Group, related_name="roles", on_delete=models.CASCADE)
@@ -75,3 +70,11 @@ class UserRole(models.Model):
     @staticmethod
     def is_active(user, group):
         return UserRole.objects.filter(user=user, group__name=group, ended_at=None).exists()
+
+class Device(models.Model):
+    """
+        Stores information about user devices for fcm notifications
+    """
+    device_id = models.CharField(max_length=100, null=True, blank=True)
+    registration_id = models.TextField()
+    email = models.CharField(max_length=100)

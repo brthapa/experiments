@@ -9,8 +9,6 @@ from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_bytes, force_str
 from django.template.loader import render_to_string
 # User Login (Handled via JWT Token Endpoint)
-# You don't need a custom view for login since JWT's `TokenObtainPairView` handles it.
-
 # User Logout
 @api_view(['POST'])
 @permission_classes([permissions.IsAuthenticated])
